@@ -6,23 +6,29 @@ public class NeuralNetwork
 {
     private Layer firstLayer;
 
+    private class Neuron
+    {
+        Matrix inputWeights;
+
+        double bias;
+
+        double currentVal;
+    }
 
     private class Layer
     {
-        Matrix layerWeights;
 
-        Matrix layerBiases;
+        Neuron[] neurons = null;
 
-        Matrix currentValue;
+        int size;
 
-        int layerSize;
+        Layer prev = null;
 
-        Layer nextLayer = null;
+        Layer next = null;
 
-        Layer prevLayer = null;
-
-        //will only be assigned in firstLayer
+        //only assigned in firstLayer to make getting outputs easier
         Layer outputLayer = null;
+
     }
 
     /**
@@ -34,28 +40,41 @@ public class NeuralNetwork
     {
         firstLayer = new Layer();
 
-        Layer current = firstLayer;
+        //setup first layer, needs special setting up as weights/bias not needed
+        firstLayer.neurons = new Neuron[input[0]];
 
-        for( int layers = 0; layers < inputSize; layers++ )
+        for ( Neuron neuron : firstLayer.neurons )
         {
-            current.layerWeights = new Matrix( 1, input[layers], Matrix.SD);
+            neuron.inputWeights = null;
 
-            current.layerBiases = new Matrix( 1, input[layers], Matrix.ZEROS);
+            neuron.bias = 0;
 
-            current.currentValue = new Matrix(1, input[layers], Matrix.ZEROS);
-
-            current.layerSize = input[layers];
-
-            current.nextLayer = new Layer();
-
-            current.nextLayer.prevLayer = current;
-
-            current = current.nextLayer;
-
-            // TODO: 5/2/19 layer weight size needs to be size of previous layer for weights
-
+            neuron.currentVal = 0;
         }
 
+        firstLayer.size = input[0];
+
+        firstLayer.next = new Layer();
+
+        Layer current = new Layer();
+
+        for( int layer = 1; layer < inputSize; layer++ )
+        {
+            //setup neurons
+            current.neurons = new Neuron[input[layer]];
+
+            for ( Neuron neuron : current.neurons )
+            {
+                //setting up neuron weights, size is prev size because of connections
+                neuron.inputWeights = new Matrix(1, current.prev.size, Matrix.SD);
+
+                neuron.bias = 0;
+
+                neuron.currentVal = 0;
+            }
+        }
+
+        //last layer set up should be output layer
         firstLayer.outputLayer = current;
     }
 
