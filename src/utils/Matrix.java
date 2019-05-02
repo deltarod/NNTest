@@ -66,7 +66,7 @@ public class Matrix
     {
         if( width != other.height )
         {
-            throw new IllegalArgumentException("Cannont multiply these arrays");
+            throw new IllegalArgumentException("Cannot multiply these arrays");
         }
 
         Matrix output = new Matrix( other.width, height, ZEROS);
@@ -116,7 +116,7 @@ public class Matrix
      * @param other other matrix
      * @return matrix of the two added together
      */
-    public Matrix add(Matrix other )
+    public Matrix add( Matrix other )
     {
         if( other.width != width || other.height != height )
         {
@@ -134,6 +134,11 @@ public class Matrix
         }
 
         return output;
+    }
+
+    public boolean isSameSize( Matrix other )
+    {
+        return ( width == other.width && height == other.height );
     }
 
     /**
