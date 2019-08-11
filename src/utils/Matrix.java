@@ -118,7 +118,7 @@ public class Matrix
      */
     public Matrix add( Matrix other )
     {
-        if( other.width != width || other.height != height )
+        if( isSameSize( other ) )
         {
             throw new IllegalArgumentException("Arrays not same size");
         }
@@ -138,6 +138,7 @@ public class Matrix
 
     public boolean isSameSize( Matrix other )
     {
+
         return ( width == other.width && height == other.height );
     }
 
@@ -147,8 +148,9 @@ public class Matrix
      */
     private void initialize( int type )
     {
-        boolean isSd = false;
         double fill = 0;
+
+
 
         switch ( type )
         {

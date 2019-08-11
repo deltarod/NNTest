@@ -15,6 +15,10 @@ public class Runner
 
 
 
+        NeuralNetwork test = new NeuralNetwork( x, 3 );
+
+
+
 
 
         // TODO: 5/2/19 Implement stupid thing to show how this all works
