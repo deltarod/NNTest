@@ -11,9 +11,9 @@ public class Matrix
 
     private double[][] matrix;
 
-    int width, height;
+    private int width, height;
 
-    Random rand = new Random();
+    private Random rand = new Random();
 
     /**
      * Initalizes blank matrix
@@ -140,6 +140,38 @@ public class Matrix
     {
 
         return ( width == other.width && height == other.height );
+    }
+
+    public Matrix averageMatrix( Matrix other, double deviationVal )
+    {
+        if ( !isSameSize( other ) )
+        {
+            throw new IllegalArgumentException( "Arrays not same size" );
+        }
+
+        Matrix child = new Matrix( width, height, ZEROS );
+
+        double current, partner, average, deviation;
+
+        for( int xInc = 0; xInc < width; xInc++ )
+        {
+            for( int yInc = 0; yInc < height; yInc++ )
+            {
+                current = matrix[xInc][yInc];
+
+                partner = other.matrix[xInc][yInc];
+
+                average = ( current + partner ) / 2;
+
+                deviation = average * deviationVal;
+
+                //sets child matrix to average, with a deviation value added in for extra "spice" in the algorithm.
+                child.matrix[xInc][yInc] = average + deviation;
+
+            }
+        }
+
+        return child;
     }
 
     /**

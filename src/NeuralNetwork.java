@@ -1,21 +1,23 @@
 import utils.Matrix;
-import java.util.Random;
+
 
 public class NeuralNetwork
 {
     Matrix input;
 
-    int[] layers;
+    private int[] layers;
 
-    int numLayers;
+    private int numLayers;
 
-    int sigType = 2;
+    private int sigType;
 
-    Layer head;
+    private Layer head;
 
     private class Neuron
     {
         Matrix prevLayerSig;
+
+        int prevLayerSize;
 
         double bias;
 
@@ -24,7 +26,29 @@ public class NeuralNetwork
         {
            prevLayerSig = new Matrix( prevLayerSize, 1, sigType );
 
+           this.prevLayerSize = prevLayerSize;
+
            this.bias = bias;
+        }
+
+        Neuron( Matrix newMatrix, int prevLayerSize, double bias )
+        {
+            this.prevLayerSize = prevLayerSize;
+
+            prevLayerSig = newMatrix;
+
+            this.bias = bias;
+        }
+
+        Neuron breedNeuron( Neuron other, double deviation )
+        {
+            double biasAvg, biasDeviation;
+
+            biasAvg = ( bias + other.bias ) / 2;
+
+            biasDeviation = biasAvg + biasAvg * deviation;
+
+            return new Neuron( prevLayerSig.averageMatrix( other.prevLayerSig, deviation ), prevLayerSize, biasDeviation );
         }
     }
 
@@ -52,15 +76,11 @@ public class NeuralNetwork
                 n.prevLayerSig = new Matrix( 1, prevLayerSize, Matrix.SD );
 
             }
-
-
         }
 
         Matrix calculateOutput( Matrix input )
         {
             Layer current = head;
-
-            Matrix currentMatrix = input;
 
             double neuronOutput;
 
@@ -72,7 +92,7 @@ public class NeuralNetwork
                  if( current == head )
                  {
                      //getting from 0,0 as the output from multiplying will be only 1 value
-                     neuronOutput = n.prevLayerSig.multiply( currentMatrix.transpose() ).get(0,0);
+                     neuronOutput = n.prevLayerSig.multiply( input.transpose() ).get(0,0);
 
                     //run through sigmoid function with bias then store into output.
                      layerOutputMatrix.modify( 1, increment, sigmoid( neuronOutput + n.bias ) );
@@ -80,9 +100,6 @@ public class NeuralNetwork
 
                  increment++;
             }
-
-
-
 
             if( nextLayer == null )
             {
@@ -93,19 +110,30 @@ public class NeuralNetwork
                 return nextLayer.calculateOutput( layerOutputMatrix );
             }
         }
-    }
 
-    //TODO: implement breeding and/or asexual reproduction
+        Layer breedLayer( Layer partner, double deviation )
+        {
+            Layer current = head, partnerCurrent = partner;
 
-    NeuralNetwork breed( NeuralNetwork partner )
-    {
-        NeuralNetwork child = new NeuralNetwork( layers, numLayers, sigType );
+            //used for getting input size for first layer of perceptrons
+            int inputSize = current.neurons[ 0 ].prevLayerSize;
 
-        child.generate();
+            Layer child = new Layer( inputSize, current.numNeurons );
 
-        Layer layer = head, other = partner.head, childHead = child.head;
+            while( current != null )
+            {
+                for (int neuronInc = 0; neuronInc < numNeurons; neuronInc++) {
+                    //long ugly statement, basically is breeding each neuron 1 by 1
+                    child.neurons[neuronInc] = current.neurons[neuronInc].breedNeuron(partnerCurrent.neurons[neuronInc], deviation);
+                }
 
+                current = current.nextLayer;
 
+                partnerCurrent = partnerCurrent.nextLayer;
+            }
+
+            return child;
+        }
     }
 
     NeuralNetwork( int[] layerSizes, int numLayers, int sigType )
@@ -117,6 +145,42 @@ public class NeuralNetwork
         this.sigType = sigType;
     }
 
+    /**
+     * Used for creating child NN
+     * @param parent parent to child
+     * @param childLayer new childLayer
+     */
+    NeuralNetwork( NeuralNetwork parent, Layer childLayer )
+    {
+        layers = parent.layers;
+
+        numLayers = parent.numLayers;
+
+        sigType = parent.sigType;
+
+        head = childLayer;
+    }
+
+    /**
+     * Used for breeding 2 NN
+     * @param partner partner to breed with
+     * @param deviation additional deviation for spice
+     * @return child NN
+     */
+    NeuralNetwork breed( NeuralNetwork partner, double deviation )
+    {
+        Layer child = head.breedLayer( partner.head, deviation );
+
+        return new NeuralNetwork( this, child );
+
+    }
+
+    //TODO: implement asexual reproduction
+    //TODO: Layer Calculation
+
+    /**
+     * Generates random layers
+     */
     private void generate()
     {
         int layerIncrement;
