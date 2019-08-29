@@ -245,12 +245,12 @@ public class Matrix
         return sb.toString();
     }
 
-    int getWidth()
+    public int getWidth()
     {
         return width;
     }
 
-    int getHeight()
+    public int getHeight()
     {
         return height;
     }

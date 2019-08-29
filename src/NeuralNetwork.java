@@ -64,6 +64,8 @@ public class NeuralNetwork
         {
             Matrix output = current.perceptronWeight.multiply( input );
 
+            output = output.add( perceptronBias );
+
             if( current.nextLayer != null )
             {
                 return calculateOutput( output, current.nextLayer );
@@ -72,7 +74,7 @@ public class NeuralNetwork
             {
                 return output;
             }
-            //TODO add bias into calculation
+
         }
 
         /**
@@ -99,6 +101,8 @@ public class NeuralNetwork
             if( current.nextLayer != null )
             {
                 daughterCurrent.nextLayer = new Layer( daughterCurrent.numPerceptrons, current.nextLayer.numPerceptrons );
+
+                daughterCurrent.nextLayer.prevLayer = daughterCurrent;
 
                 breedLayer( current.nextLayer, partnerCurrent.nextLayer, daughterCurrent.nextLayer, deviation );
             }
@@ -150,8 +154,24 @@ public class NeuralNetwork
         return new NeuralNetwork( this, childLayer );
     }
 
-    //TODO: implement asexual reproduction
-    //TODO: Layer Calculation
+    /**
+     * Asexual reproduction function
+     * @param deviation deviation for how much to change by
+     * @return daughter NN
+     */
+    NeuralNetwork asexRepro( double deviation )
+    {
+        Layer daughterLayer = head.breedLayer( head, deviation );
+
+        return new NeuralNetwork( this, daughterLayer );
+    }
+
+    //TODO: needs more back prop
+
+    Matrix calculateOutput( Matrix input )
+    {
+        return head.calculateOutput( input );
+    }
 
     /**
      * Generates random layers
@@ -169,7 +189,7 @@ public class NeuralNetwork
 
         for( layerIncrement = 2; layerIncrement < numLayers; layerIncrement++ )
         {
-            layer.nextLayer = new Layer( layer.numPerceptrons, layers[ layerIncrement] );
+            layer.nextLayer = new Layer( layer.numPerceptrons, layers[ layerIncrement ] );
 
             layer.nextLayer.prevLayer = layer;
         }
@@ -196,6 +216,21 @@ public class NeuralNetwork
         }
 
         return true;
+    }
+
+    /**
+     * Calculates final value from NN
+     * @param input input to be ran through the NN
+     * @return output value
+     */
+    public Matrix calculateValue( Matrix input )
+    {
+        if( input.getHeight() != head.numPerceptrons )
+        {
+            throw new IllegalArgumentException("Input Size different than desired input");
+        }
+
+        return head.calculateOutput( input );
     }
 
 
