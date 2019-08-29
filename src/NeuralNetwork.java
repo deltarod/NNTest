@@ -3,8 +3,6 @@ import utils.Matrix;
 
 public class NeuralNetwork
 {
-    Matrix input;
-
     private int[] layers;
 
     private int numLayers;
@@ -13,126 +11,97 @@ public class NeuralNetwork
 
     private Layer head;
 
-    private class Neuron
-    {
-        Matrix prevLayerSig;
-
-        int prevLayerSize;
-
-        double bias;
-
-        //setup each individual node
-        Neuron( int prevLayerSize, double bias )
-        {
-           prevLayerSig = new Matrix( prevLayerSize, 1, sigType );
-
-           this.prevLayerSize = prevLayerSize;
-
-           this.bias = bias;
-        }
-
-        Neuron( Matrix newMatrix, int prevLayerSize, double bias )
-        {
-            this.prevLayerSize = prevLayerSize;
-
-            prevLayerSig = newMatrix;
-
-            this.bias = bias;
-        }
-
-        Neuron breedNeuron( Neuron other, double deviation )
-        {
-            double biasAvg, biasDeviation;
-
-            biasAvg = ( bias + other.bias ) / 2;
-
-            biasDeviation = biasAvg + biasAvg * deviation;
-
-            return new Neuron( prevLayerSig.averageMatrix( other.prevLayerSig, deviation ), prevLayerSize, biasDeviation );
-        }
-    }
 
     class Layer
     {
-        Matrix layerOutputMatrix;
+        Matrix perceptronWeight;
 
-        Neuron[] neurons;
+        Matrix perceptronBias;
 
-        int numNeurons;
+        int numPerceptrons;
+        
+        int prevLayerSize;
 
         Layer prevLayer = null;
 
         Layer nextLayer = null;
 
 
+        /**
+         * Default constructor for layer class
+         * @param prevLayerSize size of previous layer
+         * @param layerSize size for current layer
+         */
         Layer( int prevLayerSize, int layerSize )
         {
-            neurons = new Neuron[ layerSize ];
+            numPerceptrons = layerSize;
+            
+            this.prevLayerSize = prevLayerSize;
 
-            numNeurons = layerSize;
+            perceptronWeight = new Matrix( prevLayerSize, layerSize, Matrix.SD );
 
-            for ( Neuron n : neurons )
-            {
-                n.prevLayerSig = new Matrix( 1, prevLayerSize, Matrix.SD );
+            perceptronBias = new Matrix( 1, layerSize, Matrix.SD );
 
-            }
         }
 
+        /**
+         * Calculates values for current NN and returns output
+         * @param input Input for calculation
+         * @return Output from NN
+         */
         Matrix calculateOutput( Matrix input )
         {
-            Layer current = head;
+            return calculateOutput( input, this );
+        }
 
-            double neuronOutput;
+        /**
+         * Recursive helper for calculateOutput
+         * @param input input Matrix
+         * @param current current Layer
+         * @return returns output matrix
+         */
+        Matrix calculateOutput( Matrix input, Layer current )
+        {
+            Matrix output = current.perceptronWeight.multiply( input );
 
-
-            int increment = 0;
-
-            for ( Neuron n : current.neurons )
+            if( current.nextLayer != null )
             {
-                 if( current == head )
-                 {
-                     //getting from 0,0 as the output from multiplying will be only 1 value
-                     neuronOutput = n.prevLayerSig.multiply( input.transpose() ).get(0,0);
-
-                    //run through sigmoid function with bias then store into output.
-                     layerOutputMatrix.modify( 1, increment, sigmoid( neuronOutput + n.bias ) );
-                 }
-
-                 increment++;
-            }
-
-            if( nextLayer == null )
-            {
-                return layerOutputMatrix;
+                return calculateOutput( output, current.nextLayer );
             }
             else
             {
-                return nextLayer.calculateOutput( layerOutputMatrix );
+                return output;
             }
+            //TODO add bias into calculation
         }
 
+        /**
+         * setup for breeding
+         * @param partner partner NN to breed with
+         * @param deviation deviation to spice up the averaging
+         * @return daughter NN
+         */
         Layer breedLayer( Layer partner, double deviation )
         {
-            Layer current = head, partnerCurrent = partner;
+            Layer daughter = new Layer( prevLayerSize, numPerceptrons);
 
-            //used for getting input size for first layer of perceptrons
-            int inputSize = current.neurons[ 0 ].prevLayerSize;
+            breedLayer( this, partner, daughter, deviation );
 
-            Layer child = new Layer( inputSize, current.numNeurons );
+            return daughter;
+        }
 
-            while( current != null )
+        void breedLayer( Layer current, Layer partnerCurrent, Layer daughterCurrent, double deviation )
+        {
+            daughterCurrent.perceptronWeight = current.perceptronWeight.averageMatrix( partnerCurrent.perceptronWeight, deviation );
+
+            daughterCurrent.perceptronBias = current.perceptronBias.averageMatrix( partnerCurrent.perceptronBias, deviation );
+
+            if( current.nextLayer != null )
             {
-                for (int neuronInc = 0; neuronInc < numNeurons; neuronInc++) {
-                    //long ugly statement, basically is breeding each neuron 1 by 1
-                    child.neurons[neuronInc] = current.neurons[neuronInc].breedNeuron(partnerCurrent.neurons[neuronInc], deviation);
-                }
+                daughterCurrent.nextLayer = new Layer( daughterCurrent.numPerceptrons, current.nextLayer.numPerceptrons );
 
-                current = current.nextLayer;
-
-                partnerCurrent = partnerCurrent.nextLayer;
+                breedLayer( current.nextLayer, partnerCurrent.nextLayer, daughterCurrent.nextLayer, deviation );
             }
-
-            return child;
         }
     }
 
@@ -169,10 +138,16 @@ public class NeuralNetwork
      */
     NeuralNetwork breed( NeuralNetwork partner, double deviation )
     {
-        Layer child = head.breedLayer( partner.head, deviation );
+        Layer childLayer;
 
-        return new NeuralNetwork( this, child );
+        if( !isSameSize( partner ) )
+        {
+            throw new IllegalArgumentException("These NN's cant breed");
+        }
 
+        childLayer = head.breedLayer( partner.head, deviation );
+
+        return new NeuralNetwork( this, childLayer );
     }
 
     //TODO: implement asexual reproduction
@@ -194,10 +169,33 @@ public class NeuralNetwork
 
         for( layerIncrement = 2; layerIncrement < numLayers; layerIncrement++ )
         {
-            layer.nextLayer = new Layer( layer.numNeurons, layers[ layerIncrement] );
+            layer.nextLayer = new Layer( layer.numPerceptrons, layers[ layerIncrement] );
 
             layer.nextLayer.prevLayer = layer;
         }
+    }
+
+    /**
+     * check to see if NN are breedable
+     * @param other other NN
+     * @return isBreedable (same size)
+     */
+    private boolean isSameSize( NeuralNetwork other )
+    {
+        if( other.numLayers != numLayers )
+        {
+            return false;
+        }
+
+        for( int layerInc = 0; layerInc < numLayers; layerInc++ )
+        {
+            if( layers[layerInc] != other.layers[layerInc] )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 

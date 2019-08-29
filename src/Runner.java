@@ -5,17 +5,7 @@ public class Runner
 {
     public static void main(String[] args)
     {
-        int[] x = {10,5,3};
 
-        NeuralNetwork nn = new NeuralNetwork(x, 3);
-
-        Matrix m = new Matrix(1, 10, 2);
-
-        System.out.println(nn.update(m));
-
-
-
-        NeuralNetwork test = new NeuralNetwork( x, 3 );
 
 
 

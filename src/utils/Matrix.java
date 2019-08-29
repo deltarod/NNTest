@@ -244,4 +244,14 @@ public class Matrix
         }
         return sb.toString();
     }
+
+    int getWidth()
+    {
+        return width;
+    }
+
+    int getHeight()
+    {
+        return height;
+    }
 }
